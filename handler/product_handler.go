@@ -1,0 +1,36 @@
+package handler
+
+import "p1finalproject/entity"
+
+func (h *Handler) GetProducts() ([]entity.Product, error) {
+	query := `
+	SELECT products.id, products.name, products.price, sizes.name, sizes.width, sizes.length, suppliers.name, suppliers.location
+FROM products
+JOIN suppliers ON products.supplier_id = suppliers.id
+JOIN sizes ON products.size_id = sizes.id
+ORDER BY products.id ASC;`
+
+	// Run the query
+	var result []entity.Product
+	rows, err := h.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Handling the result from database
+	for rows.Next() {
+		var row entity.Product
+		err = rows.Scan(&row.ProductId, &row.Name, &row.Price, &row.SizeName, &row.SizeWidth, &row.SizeLength, &row.SupplierName, &row.SupplierLocation)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, row)
+	}
+
+	return result, nil
+}

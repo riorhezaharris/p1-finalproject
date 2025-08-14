@@ -1,23 +1,23 @@
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `email` varchar(255),
   `password` varchar(255)
 );
 
-CREATE TABLE `sizes` (
+CREATE TABLE IF NOT EXISTS `sizes` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `name` varchar(255),
   `width` int,
   `length` int
 );
 
-CREATE TABLE `suppliers` (
+CREATE TABLE IF NOT EXISTS `suppliers` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `name` varchar(255),
   `location` varchar(255)
 );
 
-CREATE TABLE `products` (
+CREATE TABLE IF NOT EXISTS `products` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `name` varchar(255),
   `price` float,
@@ -25,22 +25,22 @@ CREATE TABLE `products` (
   `supplier_id` int
 );
 
-CREATE TABLE `carts` (
+CREATE TABLE IF NOT EXISTS `carts` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `user_id` int,
   `product_id` int,
   `quantity` int
 );
 
-CREATE TABLE `orders` (
+CREATE TABLE IF NOT EXISTS `orders` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `user_id` int,
-  `created_at` datetime,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `total_price` float,
   `status` varchar(255)
 );
 
-CREATE TABLE `order_details` (
+CREATE TABLE IF NOT EXISTS `order_details` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `product_id` int,
   `quantity` int,
@@ -48,7 +48,7 @@ CREATE TABLE `order_details` (
   `order_id` int
 );
 
-CREATE TABLE `payments` (
+CREATE TABLE IF NOT EXISTS `payments` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `order_id` int,
   `total_payment` int,

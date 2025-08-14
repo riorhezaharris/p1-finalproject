@@ -25,7 +25,7 @@ func InitDb() (*sql.DB, error) {
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 	database := os.Getenv("DATABASE")
-	configDatabase := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, password, host, port, database)
+	configDatabase := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", user, password, host, port, database)
 
 	// Connect to local database
 	db, err = sql.Open("mysql", configDatabase)

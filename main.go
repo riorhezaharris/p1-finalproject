@@ -1,7 +1,17 @@
 package main
 
-import "fmt"
+import (
+	"p1finalproject/cli"
+	"p1finalproject/config"
+	"p1finalproject/handler"
+)
 
 func main() {
-	fmt.Println("Hello World! This is P1 Final Project")
+	db, err := config.InitDb()
+	if err != nil {
+		panic(err)
+	}
+	handlerObject := handler.NewHandler(db)
+	cli := cli.NewCli(*handlerObject)
+	cli.Init()
 }
