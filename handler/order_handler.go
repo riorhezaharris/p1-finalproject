@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"p1finalproject/entity"
+	"strings"
 )
 
 func (h *Handler) CreateOrder(userId int) (int, error) {
@@ -27,11 +28,15 @@ func (h *Handler) CreateOrder(userId int) (int, error) {
 	}
 
 	// Input all the cart items into order details
-	query = `INSERT INTO order_details (product_id, quantity, price, order_id) VALUES(`
+	query = `INSERT INTO order_details (product_id, quantity, price, order_id) VALUES`
+	var tempArray []string
 	for _, cartItem := range cart {
-		query += fmt.Sprintf(`%d, %d, %.2f, %d`, cartItem.ProductId, cartItem.Quantity, cartItem.ProductPrice, orderId)
+		strVal := fmt.Sprintf(`(%d, %d, %.2f, %d)`, cartItem.ProductId, cartItem.Quantity, cartItem.ProductPrice, orderId)
+		tempArray = append(tempArray, strVal)
 	}
-	query += `);`
+
+	joinedVal := strings.Join(tempArray, ", ")
+	query += joinedVal
 
 	// Run the query
 	_, err = h.db.Exec(query)
