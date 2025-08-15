@@ -7,10 +7,11 @@ import (
 )
 
 func (h *Handler) GetCart(userId int) ([]entity.CartItem, float32, error) {
-	query := fmt.Sprintf(`SELECT carts.id, carts.product_id, products.name, products.price, quantity
+	query := fmt.Sprintf(`SELECT carts.id, carts.product_id, products.name, products.price, sizes.name, quantity
 FROM carts
 JOIN users ON carts.user_id = users.id
 JOIN products ON carts.product_id = products.id
+JOIN sizes ON products.size_id = sizes.id
 WHERE carts.user_id = %d`, userId)
 
 	// Run the query
@@ -28,7 +29,7 @@ WHERE carts.user_id = %d`, userId)
 	// Handling the result from database
 	for rows.Next() {
 		var row entity.CartItem
-		err = rows.Scan(&row.CartItemId, &row.ProductId, &row.ProductName, &row.ProductPrice, &row.Quantity)
+		err = rows.Scan(&row.CartItemId, &row.ProductId, &row.ProductName, &row.ProductPrice, &row.ProductSize, &row.Quantity)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -44,7 +45,7 @@ WHERE carts.user_id = %d`, userId)
 	return result, calculation, nil
 }
 
-func (h *Handler) AddItem(userId int, productId int) error {
+func (h *Handler) AddItem(userId int, productId int, quantity int) error {
 	// Check if the product exist in the cart
 	cartItem, err := h.findCartItem(userId, productId)
 	if err != nil {
@@ -54,9 +55,9 @@ func (h *Handler) AddItem(userId int, productId int) error {
 	// If the product exist in the cart, just add the quantity
 	var query string
 	if len(cartItem) == 0 {
-		query = fmt.Sprintf(`INSERT INTO carts (user_id, product_id, quantity) VALUES(%d, %d, 1);`, userId, productId)
+		query = fmt.Sprintf(`INSERT INTO carts (user_id, product_id, quantity) VALUES(%d, %d, %d);`, userId, productId, quantity)
 	} else {
-		query = fmt.Sprintf(`UPDATE carts SET quantity = %d WHERE carts.id = %d;`, cartItem[0].Quantity+1, cartItem[0].CartItemId)
+		query = fmt.Sprintf(`UPDATE carts SET quantity = %d WHERE carts.id = %d;`, cartItem[0].Quantity+quantity, cartItem[0].CartItemId)
 	}
 
 	// Run the query

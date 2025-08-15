@@ -97,6 +97,53 @@ ORDER BY orders.created_at DESC;`, userId)
 	return result, nil
 }
 
+func (h *Handler) GetOrderById(userId int, orderId int) (entity.Order, error) {
+	query := fmt.Sprintf(`
+	SELECT orders.id, users.email, orders.created_at, orders.total_price, orders.status
+FROM orders
+JOIN users ON orders.user_id = users.id
+WHERE orders.user_id = %d && orders.id = %d
+ORDER BY orders.created_at DESC;`, userId, orderId)
+
+	// Run the query
+	var result entity.Order
+	rows, err := h.db.Query(query)
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
+
+	if err := rows.Err(); err != nil {
+		return result, err
+	}
+
+	// Handling the result from database
+	if rows.Next() {
+		err = rows.Scan(&result.OrderId, &result.UserEmail, &result.CreatedAt, &result.TotalPrice, &result.Status)
+		if err != nil {
+			return result, err
+		}
+
+		// Handle order details of the order
+		result.OrderDetails, err = h.getOrderDetails(result.OrderId)
+		if err != nil {
+			return result, err
+		}
+
+		// If the order is paid, include the payment details
+		if result.Status != "waiting_for_payment" {
+			payment, err := h.getPayment(result.OrderId)
+			if err != nil {
+				return result, err
+			}
+			result.TotalPayment = payment.TotalPayment
+			result.PaymentStatus = payment.Status
+		}
+	}
+
+	return result, nil
+}
+
 func (h *Handler) getOrderDetails(orderId int) ([]entity.OrderItem, error) {
 	query := fmt.Sprintf(`
 	SELECT products.name, sizes.name, order_details.quantity, order_details.price
