@@ -2,50 +2,49 @@ package handler
 
 import (
 	"fmt"
+	"strings"
 	"p1finalproject/entity"
 )
 
 func (h *Handler) CreateOrder(userId int) (int, error) {
-	// Fetch the current cart
-	cart, subtotal, err := h.GetCart(userId)
-	if err != nil {
-		return 0, err
-	}
+    // Ambil cart + subtotal
+    cart, subtotal, err := h.GetCart(userId)
+    if err != nil { return 0, err }
+    if len(cart) == 0 { return 0, fmt.Errorf("cart empty") }
 
-	// Create an order based the current cart
-	query := fmt.Sprintf(`INSERT INTO orders (user_id, total_price, status) VALUES(%d, %.2f, 'waiting_for_payment');`, userId, subtotal)
+    // Transaksi biar atomic
+    tx, err := h.db.Begin()
+    if err != nil { return 0, err }
+    defer func() {
+        if err != nil { _ = tx.Rollback() }
+    }()
 
-	// Run the query
-	createdOrder, err := h.db.Exec(query)
-	if err != nil {
-		return 0, err
-	}
+    // 1) Buat record orders → dapat orderId
+    res, err := tx.Exec(`INSERT INTO orders (user_id, total_price, status) VALUES (?, ?, 'waiting_for_payment')`,
+        userId, subtotal)
+    if err != nil { return 0, err }
+    oid, err := res.LastInsertId()
+    if err != nil { return 0, err }
+    orderId := int(oid)
 
-	orderId, err := createdOrder.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
+    // 2) Bulk insert order_details
+    //    INSERT INTO order_details (product_id, quantity, price, order_id) VALUES (?, ?, ?, ?), (?, ?, ?, ?), ...
+    placeholders := make([]string, 0, len(cart))
+    args := make([]any, 0, len(cart)*4)
+    for _, it := range cart {
+        placeholders = append(placeholders, "(?, ?, ?, ?)")
+        args = append(args, it.ProductId, it.Quantity, it.ProductPrice, orderId)
+    }
+    q := fmt.Sprintf(`INSERT INTO order_details (product_id, quantity, price, order_id) VALUES %s`,
+        strings.Join(placeholders, ","))
+    if _, err = tx.Exec(q, args...); err != nil { return 0, err }
 
-	// Input all the cart items into order details
-	query = `INSERT INTO order_details (product_id, quantity, price, order_id) VALUES(`
-	for _, cartItem := range cart {
-		query += fmt.Sprintf(`%d, %d, %.2f, %d`, cartItem.ProductId, cartItem.Quantity, cartItem.ProductPrice, orderId)
-	}
-	query += `);`
+    // 3) Kosongkan cart user
+    if _, err = tx.Exec(`DELETE FROM carts WHERE user_id = ?`, userId); err != nil { return 0, err }
 
-	// Run the query
-	_, err = h.db.Exec(query)
-	if err != nil {
-		return 0, err
-	}
-
-	// Reset the cart after the order is created
-	err = h.ResetCart(userId)
-	if err != nil {
-		return 0, err
-	}
-
-	return int(orderId), err
+    // Commit
+    if err = tx.Commit(); err != nil { return 0, err }
+    return orderId, nil
 }
 
 func (h *Handler) GetOrders(userId int) ([]entity.Order, error) {

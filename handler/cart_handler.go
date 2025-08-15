@@ -7,43 +7,34 @@ import (
 )
 
 func (h *Handler) GetCart(userId int) ([]entity.CartItem, float32, error) {
-	query := fmt.Sprintf(`SELECT carts.id, carts.product_id, products.name, products.price, sizes.name, quantity
+    query := fmt.Sprintf(`SELECT carts.id, carts.product_id, products.name, products.price, sizes.name, quantity
 FROM carts
 JOIN users ON carts.user_id = users.id
 JOIN products ON carts.product_id = products.id
 JOIN sizes ON products.size_id = sizes.id
 WHERE carts.user_id = %d`, userId)
 
-	// Run the query
-	var result []entity.CartItem
-	rows, err := h.db.Query(query)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
+    var result []entity.CartItem
+    rows, err := h.db.Query(query)
+    if err != nil { return nil, 0, err }
+    defer rows.Close()
 
-	if err := rows.Err(); err != nil {
-		return nil, 0, err
-	}
+    for rows.Next() {
+        var row entity.CartItem
+        if err := rows.Scan(&row.CartItemId, &row.ProductId, &row.ProductName, &row.ProductPrice, &row.ProductSize, &row.Quantity); err != nil {
+            return nil, 0, err
+        }
+        result = append(result, row)
+    }
+    if err := rows.Err(); err != nil { return nil, 0, err }
 
-	// Handling the result from database
-	for rows.Next() {
-		var row entity.CartItem
-		err = rows.Scan(&row.CartItemId, &row.ProductId, &row.ProductName, &row.ProductPrice, &row.ProductSize, &row.Quantity)
-		if err != nil {
-			return nil, 0, err
-		}
-		result = append(result, row)
-	}
-
-	// Calculate the subtotal from the cart items
-	var calculation float32
-	for _, item := range result {
-		calculation += item.ProductPrice
-	}
-
-	return result, calculation, nil
+    var subtotal float32
+    for _, it := range result {
+        subtotal += it.ProductPrice * float32(it.Quantity) // <-- penting
+    }
+    return result, subtotal, nil
 }
+
 
 func (h *Handler) UpdateQuantity(userId int, productId int, quantity int) error {
 	// Check if the product exist in the cart
