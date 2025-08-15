@@ -143,7 +143,7 @@ func (c *CLI) shopFlow() {
 			continue
 		}
 
-		if err := c.Handler.AddItem(c.userID, p.ProductId, qty); err != nil {
+		if err := c.Handler.UpdateQuantity(c.userID, p.ProductId, qty); err != nil {
 			fmt.Println(utils.Colorize("Gagal menambah ke keranjang:", utils.ClrRed), err)
 			continue
 		}
@@ -160,7 +160,7 @@ func (c *CLI) showProducts() {
 		return
 	}
 
-	headers := []string{"ID", "Name", "Size", "Price"}
+	headers := []string{"Code", "Name", "Size", "Price"}
 	var rows [][]string
 	for _, p := range items {
 		rows = append(rows, []string{
@@ -184,14 +184,14 @@ func (c *CLI) cartMenu() {
 		if len(items) == 0 {
 			fmt.Println(utils.Colorize("(kosong)", utils.ClrGray))
 		} else {
-			headers := []string{"Code", "Name", "Size", "Price", "Qty", "Subtotal"}
+			headers := []string{"Code", "Name", "Size", "Price", "Qty"}
 			var rows [][]string
 			for _, it := range items {
 				rows = append(rows, []string{
 					strconv.Itoa(it.ProductId),
 					it.ProductName,
-					utils.FormatRupiah(it.ProductPrice),
 					it.ProductSize,
+					utils.FormatRupiah(it.ProductPrice),
 					strconv.Itoa(it.Quantity),
 					// utils.FormatRupiah(it.SubTotal),
 				})
@@ -230,7 +230,7 @@ func (c *CLI) cartMenu() {
 			}
 			fmt.Println(utils.Colorize("Item dihapus dari keranjang.", utils.ClrYellow))
 		} else {
-			if err := c.Handler.AddItem(c.userID, pid, qty); err != nil {
+			if err := c.Handler.UpdateQuantity(c.userID, pid, qty); err != nil {
 				fmt.Println(utils.Colorize("Gagal mengubah keranjang:", utils.ClrRed), err)
 			}
 			fmt.Println(utils.Colorize("Quantity diperbarui.", utils.ClrGreen))
@@ -270,7 +270,7 @@ func (c *CLI) checkout() {
 	}
 
 	fmt.Println("\n" + utils.Colorize("=== Checkout Result ===", utils.ClrBold+utils.ClrBlue))
-	headers := []string{"Order ID", "Total", "Dibayar", "Kembalian", "Order Status", "Payment"}
+	headers := []string{"Order ID", "Total", "Dibayar", "Kembalian", "Order Status", "Payment Status"}
 	order, err := c.Handler.GetOrderById(c.userID, orderId)
 	if err != nil {
 		fmt.Println(utils.Colorize("Invalid Order Id", utils.ClrRed), err)
@@ -306,12 +306,12 @@ func (c *CLI) history() {
 		return
 	}
 
-	headers := []string{"Order#", "Created At", "Total", "Status", "Paid"}
+	headers := []string{"Order#", "Ordered At", "Total Price", "Status", "Paid"}
 	var rows [][]string
 	for _, o := range list {
 		rows = append(rows, []string{
 			"#" + strconv.Itoa(o.OrderId),
-			o.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			o.CreatedAt.Format("2006-01-02 15:04:05"),
 			utils.FormatRupiah(o.TotalPrice),
 			o.Status,
 			utils.FormatRupiah(o.TotalPayment),

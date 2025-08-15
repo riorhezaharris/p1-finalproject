@@ -1,6 +1,9 @@
 package handler
 
-import "p1finalproject/entity"
+import (
+	"fmt"
+	"p1finalproject/entity"
+)
 
 func (h *Handler) GetProducts() ([]entity.Product, error) {
 	query := `
@@ -36,12 +39,13 @@ ORDER BY products.id ASC;`
 }
 
 func (h *Handler) GetProductsById(productId int) (entity.Product, error) {
-	query := `
+	query := fmt.Sprintf(`
 	SELECT products.id, products.name, products.price, sizes.name, sizes.width, sizes.length, suppliers.name, suppliers.location
 FROM products
 JOIN suppliers ON products.supplier_id = suppliers.id
 JOIN sizes ON products.size_id = sizes.id
-ORDER BY products.id ASC;`
+WHERE products.id = %d
+ORDER BY products.id ASC;`, productId)
 
 	// Run the query
 	var result entity.Product

@@ -36,9 +36,9 @@ ORDER BY orders.created_at DESC;`, userId, orderId)
 	// Handle if the payment not sufficient
 	var status string
 	if order.TotalPrice > totalPayment {
-		status = "insufficient"
+		status = "Insufficient"
 	} else {
-		status = "sufficient"
+		status = "Sufficient"
 	}
 
 	query = fmt.Sprintf(`INSERT INTO payments (order_id, total_payment, status) VALUES(%d, %.2f, '%s');`, orderId, totalPayment, status)
@@ -51,10 +51,10 @@ ORDER BY orders.created_at DESC;`, userId, orderId)
 
 	// Update the order status based on the payment
 	var orderStatus string
-	if status == "insufficient" {
-		orderStatus = "failed"
+	if status == "Insufficient" {
+		orderStatus = "Failed"
 	} else {
-		orderStatus = "success"
+		orderStatus = "Success"
 	}
 	query = fmt.Sprintf(`UPDATE orders SET status = '%s' WHERE orders.id = %d;`, orderStatus, orderId)
 

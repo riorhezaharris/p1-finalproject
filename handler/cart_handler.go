@@ -45,7 +45,7 @@ WHERE carts.user_id = %d`, userId)
 	return result, calculation, nil
 }
 
-func (h *Handler) AddItem(userId int, productId int, quantity int) error {
+func (h *Handler) UpdateQuantity(userId int, productId int, quantity int) error {
 	// Check if the product exist in the cart
 	cartItem, err := h.findCartItem(userId, productId)
 	if err != nil {
@@ -78,12 +78,8 @@ func (h *Handler) RemoveItem(userId int, productId int) error {
 		return errors.New("item not found in the cart")
 	}
 
-	// If the product quantity is 0, remove the product from the cart
-	if cartItem[0].Quantity > 1 {
-		query = fmt.Sprintf(`UPDATE carts SET quantity = %d WHERE carts.id = %d;`, cartItem[0].Quantity-1, cartItem[0].CartItemId)
-	} else {
-		query = fmt.Sprintf(`DELETE FROM carts WHERE carts.id = %d;`, cartItem[0].CartItemId)
-	}
+	// Remove the product from the cart
+	query = fmt.Sprintf(`DELETE FROM carts WHERE carts.id = %d;`, cartItem[0].CartItemId)
 
 	// Run the query
 	_, err = h.db.Exec(query)
@@ -99,7 +95,7 @@ func (h *Handler) ResetCart(userId int) error {
 }
 
 func (h *Handler) findCartItem(userId int, productId int) ([]entity.CartItem, error) {
-	query := fmt.Sprintf(`SELECT carts.product_id, products.name, products.price, quantity
+	query := fmt.Sprintf(`SELECT carts.id, carts.product_id, products.name, products.price, quantity
 FROM carts
 JOIN users ON carts.user_id = users.id
 JOIN products ON carts.product_id = products.id
@@ -120,7 +116,7 @@ WHERE carts.user_id = %d && carts.product_id = %d`, userId, productId)
 	// Handling the result from database
 	for rows.Next() {
 		var row entity.CartItem
-		err = rows.Scan(&row.ProductId, &row.ProductName, &row.ProductPrice, &row.Quantity)
+		err = rows.Scan(&row.CartItemId, &row.ProductId, &row.ProductName, &row.ProductPrice, &row.Quantity)
 		if err != nil {
 			return nil, err
 		}
